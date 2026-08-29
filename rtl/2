@@ -1,0 +1,53 @@
+//This is only a simulation PHY as the FPGA I use doesn't have a built-in one
+
+module phy_model(
+	output logic rx_clk,
+	output logic [3:0] rx_dt,
+	output logic rx_dt_valid,
+	output logic rx_er	
+);
+
+	initial rx_clk = 1'b0;
+	always #20 rx_clk = ~rx_clk;
+
+	typedef enum logic[2:0]{
+		IDLE,
+		PREAMBLE,
+		SFD,
+		FRAME
+	}byte_state_t;
+
+	byte_state_t, current_state;
+	logic nibble;
+	logic [7:0] byte_idx;
+
+	always_ff @(posedge rx_clk) begin
+		if(byte_idx < 24) begin
+			current_state <= IDLE;
+		end else if(byte_idx < 38) begin
+			current_state <= PREAMBLE;
+		end else if(byte_idx < 40) begin 
+			current_state <= SFD;
+		end else begin 
+			current_state <= FRAME;
+		end
+
+		if(byte_idx < 248) begin
+			byte_idx <= byte_idx + 1;
+		end else begin
+			byte_idx <= 0;
+		end
+	end
+
+
+	always_comb begin	
+		case(current_state)
+			IDLE : rx_dt_valid = 0;
+			PREAMBLE : rx_dt_valid = 1;
+			SFD : rx_dt_valid = 1;
+			FRAME : rx_dt_valid = 1;
+			default : rx_dt_valid = 0;
+		endcase
+	end
+
+endmodule
