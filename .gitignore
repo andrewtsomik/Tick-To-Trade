@@ -1,0 +1,92 @@
+# ---------------------------------------------------------------------------
+# Vivado
+# ---------------------------------------------------------------------------
+# Generated project directories. The .xpr itself is also generated -- prefer
+# rebuilding the project from a Tcl script and keep only sources in git.
+*.cache/
+*.hw/
+*.ip_user_files/
+*.runs/
+*.sim/
+*.gen/
+*.srcs/sources_1/ip/*/
+*.xpr
+*.str
+ 
+# Logs and journals
+*.jou
+*.log
+vivado*.jou
+vivado*.log
+vivado_pid*.str
+hs_err_pid*.log
+usage_statistics_webtalk.*
+webtalk*.jou
+webtalk*.log
+tight_setup_hold_pins.txt
+ 
+# Synthesis / implementation output
+*.bit
+*.bin
+*.ltx
+*.mmi
+*.dcp
+*.rpt
+*.pb
+*.wdb
+*.wcfg
+*.debug
+ 
+# Simulation
+xsim.dir/
+xelab.pb
+xvlog.pb
+xsim*.jou
+xsim*.log
+*.vcd
+*.fsdb
+*.ghw
+*.saif
+ 
+# ---------------------------------------------------------------------------
+# C++ tooling
+# ---------------------------------------------------------------------------
+build/
+bin/
+obj/
+*.o
+*.a
+*.so
+*.exe
+*.out
+*.d
+compile_commands.json
+ 
+# Built generator binaries -- adjust names as the tools directory fills out
+tools/itch_gen
+tools/book_model
+tools/book_bench
+tools/feed_sim
+ 
+# ---------------------------------------------------------------------------
+# Generated stimulus
+#
+# Hex and pcap files are outputs of the C++ generator, not sources. Regenerate
+# them rather than committing them -- they are large and change constantly.
+# If a specific capture is needed to reproduce a bug, commit it deliberately
+# with `git add -f` and a comment explaining why.
+# ---------------------------------------------------------------------------
+*.hex
+*.pcap
+*.bin
+ 
+# ---------------------------------------------------------------------------
+# Editors / OS
+# ---------------------------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
