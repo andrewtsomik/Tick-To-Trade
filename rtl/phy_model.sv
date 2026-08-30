@@ -5,8 +5,8 @@ module phy_model#(
 	parameter int IDLE_OFFSET = 24,
 	parameter int PREAMBLE_OFFSET = 38,
 	parameter int SFD_OFFSET = 40,
-	parameter int TOTAL_CYCLES = SFD_OFFSET + FRAME_BYTES * 2
-	parameter string DATA_FILE = "data.hex"	
+	parameter int TOTAL_CYCLES = SFD_OFFSET + FRAME_BYTES * 2,
+	parameter string DATA_FILE = "C:/Users/andre/tick-to-trade/sim/data/data.hex"	
 )
 
 (
