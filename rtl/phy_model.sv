@@ -5,7 +5,8 @@ module phy_model#(
 	parameter int IDLE_OFFSET = 24,
 	parameter int PREAMBLE_OFFSET = 38,
 	parameter int SFD_OFFSET = 40,
-	parameter int TOTAL_CYCLES = SFD_OFFSET + FRAME_BYTES * 2	
+	parameter int TOTAL_CYCLES = SFD_OFFSET + FRAME_BYTES * 2
+	parameter string DATA_FILE = "data.hex"	
 )
 
 (
@@ -34,7 +35,7 @@ module phy_model#(
 	//Read from hex file for input
 	initial begin 
 		byte_idx = 0;
-		$readmemh("data.hex", frame_data);
+		$readmemh(DATA_FILE, frame_data);
 	end
 
 	always_ff @(posedge rx_clk) begin
