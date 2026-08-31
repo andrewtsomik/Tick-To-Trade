@@ -23,12 +23,13 @@ module mac_rx #(
 	logic feedback;
 	logic nibble;
 	logic [3:0] nibble_counter;
-	logic end_flag;
+	logic first_byte_pending;
+	logic [3:0] nibble_hold;
 	
 	typedef enum logic [1:0]{
 		IDLE,
 		SEARCH,
-		RECIEVIED
+		RECEIVED
 	}sfd_states_t;
 
 	sfd_states_t state, next_state;
@@ -41,19 +42,26 @@ module mac_rx #(
 			nibble <= 0;
 			nibble_counter <= 0;
 			state <= IDLE;
+			start_of_frame <= 0;
+			first_byte_pending <= 0;
 		end else if(rx_dt_valid && !rx_er) begin	
 			crc_reg <= crc_next;
 			state <= next_state;
-
-			if(start_of_frame) begin
-				valid <= 1;
-			end
 			
-			if(valid) begin
+			if(state == SEARCH && next_state == RECEIVED) begin
+				nibble <= 0;
+				first_byte_pending <= 1;
+				valid <= 0;
+			end else if(state == RECEIVED) begin
 				if(nibble) begin
-					full_nibble <= {rx_dt, full_nibble[3:0]};
+					valid <= 1;
+					full_nibble <= {rx_dt, nibble_hold};
+					first_byte_pending <= 0;
+					start_of_frame <= first_byte_pending;
 				end else begin
-					full_nibble <= {4'd0, rx_dt};	
+					valid <= 0;
+					nibble_hold <= rx_dt;
+					start_of_frame <= 0;
 				end
 				nibble <= nibble + 1;
 			end
@@ -65,9 +73,6 @@ module mac_rx #(
 			end
 		end else begin 
 			state <= next_state;
-			if(end_of_frame) begin 
-				valid <= 0;
-			end
 		end
 	end
 
@@ -80,13 +85,10 @@ module mac_rx #(
 				crc_next = crc_next ^ POLY;
 			end
 		end
-		
 		next_state = state;
-		start_of_frame = 0;
 		end_of_frame = 0;
 		case(state) 
 			IDLE : begin
-			 	end_of_frame = 0;
 				if(rx_dt_valid && !rx_er && nibble_counter < 15) begin 
 					next_state = SEARCH;
 				end else begin 
@@ -97,8 +99,8 @@ module mac_rx #(
 				if(rx_dt_valid && !rx_er && nibble_counter < 15) begin 
 					if(rx_dt == 4'h5) begin 
 						next_state = SEARCH;
-					end else if(rx_dt == 4'hD) begin 
-						next_state = RECIEVIED;
+					end else if(rx_dt == 4'hD) begin	
+						next_state = RECEIVED;
 					end else begin 
 						next_state = IDLE;
 					end
@@ -106,16 +108,12 @@ module mac_rx #(
 					next_state = IDLE;
 				end
 			end
-			RECIEVIED : begin 
+			RECEIVED : begin 
 				if(rx_dt_valid && !rx_er) begin 
 					if(rx_dt == 4'h5 && nibble_counter == 15) begin 
-						next_state = RECIEVIED;
-						start_of_frame = 1;
-						end_of_frame = 0;	
+						next_state = RECEIVED;	
 					end else begin 
-						next_state = RECIEVIED;
-						start_of_frame = 0;
-						end_of_frame = 0;
+						next_state = RECEIVED;
 					end 
 				end else begin 
 					end_of_frame = 1;
@@ -125,4 +123,6 @@ module mac_rx #(
 		endcase	
 	end
 
+	 
+	assign rx_byte = full_nibble;
 endmodule
