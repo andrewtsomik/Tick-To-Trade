@@ -23,6 +23,7 @@ module mac_rx #(
 	logic feedback;
 	logic nibble;
 	logic [3:0] nibble_counter;
+	logic end_flag;
 	
 	typedef enum logic [1:0]{
 		IDLE,
@@ -35,8 +36,6 @@ module mac_rx #(
 	always_ff @(posedge clk or negedge rst_n) begin
 		if(!rst_n) begin 
 			valid <= 0;
-			start_of_frame <= 0;
-			end_of_frame <= 0;
 			crc <= 0;
 			crc_reg <= INIT;
 			nibble <= 0;
@@ -48,8 +47,6 @@ module mac_rx #(
 
 			if(start_of_frame) begin
 				valid <= 1;
-			end else if(end_of_frame) begin 
-				valid <= 0;
 			end
 			
 			if(valid) begin
@@ -61,10 +58,15 @@ module mac_rx #(
 				nibble <= nibble + 1;
 			end
 
-			if(nibble_counter < 15 && (rx_dt == 4'h5 || rx_dt == 4'hD) && state = SEARCH) begin
+			if(nibble_counter < 15 && (rx_dt == 4'h5 || rx_dt == 4'hD) && state == SEARCH) begin
 				nibble_counter <= nibble_counter + 1;
 			end else begin 
 				nibble_counter <= 0;
+			end
+		end else begin 
+			state <= next_state;
+			if(end_of_frame) begin 
+				valid <= 0;
 			end
 		end
 	end
@@ -80,10 +82,44 @@ module mac_rx #(
 		end
 		
 		next_state = state;
+		start_of_frame = 0;
+		end_of_frame = 0;
 		case(state) 
 			IDLE : begin
-				if(rx_dt_valid && !rx_er) begin 
+			 	end_of_frame = 0;
+				if(rx_dt_valid && !rx_er && nibble_counter < 15) begin 
 					next_state = SEARCH;
+				end else begin 
+					next_state = IDLE;
+				end
+			end
+			SEARCH : begin 
+				if(rx_dt_valid && !rx_er && nibble_counter < 15) begin 
+					if(rx_dt == 4'h5) begin 
+						next_state = SEARCH;
+					end else if(rx_dt == 4'hD) begin 
+						next_state = RECIEVIED;
+					end else begin 
+						next_state = IDLE;
+					end
+				end else begin 
+					next_state = IDLE;
+				end
+			end
+			RECIEVIED : begin 
+				if(rx_dt_valid && !rx_er) begin 
+					if(rx_dt == 4'h5 && nibble_counter == 15) begin 
+						next_state = RECIEVIED;
+						start_of_frame = 1;
+						end_of_frame = 0;	
+					end else begin 
+						next_state = RECIEVIED;
+						start_of_frame = 0;
+						end_of_frame = 0;
+					end 
+				end else begin 
+					end_of_frame = 1;
+					next_state = IDLE;
 				end
 			end
 		endcase	
