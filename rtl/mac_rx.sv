@@ -26,6 +26,9 @@ module mac_rx #(
 	logic first_byte_pending;
 	logic [3:0] nibble_hold;
 	
+	logic [7:0] byte_now;
+	assign byte_now = {rx_dt, nibble_hold};
+
 	typedef enum logic [1:0]{
 		IDLE,
 		SEARCH,
@@ -45,15 +48,16 @@ module mac_rx #(
 			start_of_frame <= 0;
 			first_byte_pending <= 0;
 		end else if(rx_dt_valid && !rx_er) begin	
-			crc_reg <= crc_next;
 			state <= next_state;
 			
 			if(state == SEARCH && next_state == RECEIVED) begin
+				crc_reg <= INIT;
 				nibble <= 0;
 				first_byte_pending <= 1;
 				valid <= 0;
 			end else if(state == RECEIVED) begin
 				if(nibble) begin
+					crc_reg <= crc_next;
 					valid <= 1;
 					full_nibble <= {rx_dt, nibble_hold};
 					first_byte_pending <= 0;
@@ -73,13 +77,18 @@ module mac_rx #(
 			end
 		end else begin 
 			state <= next_state;
+			if(end_of_frame) begin 
+				crc <= (crc_reg == 32'hC704DD7B);
+			end
+			valid <= 0;
+			start_of_frame <= 0;
 		end
 	end
 
 	always_comb begin 
 		crc_next = crc_reg;
 		for(int i = 0; i < 8; i++) begin
-			feedback = crc_next[31] ^ rx_byte[7-i];
+			feedback = crc_next[31] ^ byte_now[7-i];
 			crc_next = crc_next << 1;
 			if(feedback) begin
 				crc_next = crc_next ^ POLY;
