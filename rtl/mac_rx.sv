@@ -9,6 +9,7 @@ module mac_rx #(
 	input logic [3:0] rx_dt,
 	input logic rx_dt_valid,
 	input logic rx_er,
+	input logic empty,
 
 	output logic [7:0] rx_byte,
 	output logic valid,
@@ -47,7 +48,7 @@ module mac_rx #(
 			state <= IDLE;
 			start_of_frame <= 0;
 			first_byte_pending <= 0;
-		end else if(rx_dt_valid && !rx_er) begin	
+		end else if(rx_dt_valid && !rx_er && !empty) begin	
 			state <= next_state;
 			
 			if(state == SEARCH && next_state == RECEIVED) begin
@@ -75,7 +76,7 @@ module mac_rx #(
 			end else begin 
 				nibble_counter <= 0;
 			end
-		end else begin 
+		end else if (!empty && !rx_dt_valid) begin 
 			state <= next_state;
 			if(end_of_frame) begin 
 				crc <= (crc_reg == 32'hC704DD7B);
