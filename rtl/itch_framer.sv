@@ -22,10 +22,10 @@ module itch_framer#(
 );
 
 	logic [4:0] itch_idx;
-	logic [15:0] message_count;
-	logic [15:0] message_length;
-	logic [15:0] bytes_remaining;
-	logic [15:0] messages_remaining;
+	logic [8*MOLD_MESSAGE_COUNT_LEN - 1:0] message_count;
+	logic [8*MESSAGE_LENGTH_LEN - 1:0] message_length;
+	logic [8*MESSAGE_LENGTH_LEN - 1:0] bytes_remaining;
+	logic [8*MOLD_MESSAGE_COUNT_LEN - 1:0] messages_remaining;
 	logic length_idx;
 
 	typedef enum logic [2:0]{
@@ -42,13 +42,14 @@ module itch_framer#(
 		if(!rst_n || end_of_boundary) begin 
 			itch_idx <= 0;
 			message_length <= 0;
+			length_idx <= 0;
 		end else if(itch_valid) begin 
 			itch_idx <= itch_idx + 1;
 			
-			if(next_state == READ_LENGTH && !length_idx) begin 
+			if(state == READ_LENGTH && !length_idx) begin 
 				message_length <= {8'd0, itch_byte};
 				length_idx <= 1;
-			end else if(next_state == READ_LENGTH && length_idx) begin 
+			end else if(state == READ_LENGTH && length_idx) begin 
 				message_length <= {message_length[7:0], itch_byte};
 				length_idx <= 0;
 			end
@@ -67,7 +68,7 @@ module itch_framer#(
 		if(!rst_n || end_of_boundary) begin 
 			message_count <= 0;
 		end else if(itch_valid) begin 
-			if(itch_idx == 18 && next_state == READ_MOLD) begin 
+			if(itch_idx == 18 && state == READ_MOLD) begin 
 				message_count <= {8'd0, itch_byte};
 			end else if(itch_idx == 19 && state == READ_MOLD) begin 
 				message_count <= {message_count[7:0], itch_byte};
@@ -80,15 +81,15 @@ module itch_framer#(
 			bytes_remaining <= 0;
 			messages_remaining <= 0;
 		end else if(itch_valid) begin 
-			if(next_state == READ_MOLD && itch_idx == 19) begin 
+			if(state == READ_MOLD && itch_idx == 19) begin 
 				messages_remaining <= {message_count[7:0], itch_byte};
-			end else if(next_state == STREAMING && bytes_remaining == 1) begin 
+			end else if(state == STREAMING && bytes_remaining == 1) begin 
 				messages_remaining <= messages_remaining - 1;
 			end
 
-			if(next_state == READ_LENGTH && length_idx) begin 
+			if(state == READ_LENGTH && length_idx) begin 
 				bytes_remaining <= {message_length[7:0], itch_byte};
-			end else if(next_state == STREAMING) begin 
+			end else if(state == STREAMING) begin 
 				bytes_remaining <= bytes_remaining - 1;
 			end
 		end
@@ -124,7 +125,7 @@ module itch_framer#(
 				
 				STREAMING : begin 
 					if(itch_valid && bytes_remaining == 1) begin 
-						if(message_remaining > 1) begin 
+						if(messages_remaining > 1) begin 
 							next_state = READ_LENGTH;
 						end else begin 
 							next_state = DONE;
@@ -146,7 +147,7 @@ module itch_framer#(
 	
 	assign valid = itch_valid && state == STREAMING;
 	assign start_of_msg = itch_valid && state == STREAMING && message_length == bytes_remaining;
-	assign end_of_msg = itch_valid && next_state == READ_LENGTH && state == STREAMING;
+	assign end_of_msg = (itch_valid && next_state == READ_LENGTH && state == STREAMING) || (itch_valid && state == DONE);
 	assign message_byte = itch_byte;
 
 endmodule
