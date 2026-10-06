@@ -24,7 +24,7 @@ module itch_framer#(
 	logic [4:0] itch_idx;
 	logic [8*MOLD_MESSAGE_COUNT_LEN - 1:0] message_count;
 	logic [8*MESSAGE_LENGTH_LEN - 1:0] message_length;
-	logic [8*MESSAGE_LENGTH_LEN - 1:0] bytes_remaining;
+	logic [8*MESSAGE_LENGTH_LEN - 1:0] bytes_remaining /* verilator public */;
 	logic [8*MOLD_MESSAGE_COUNT_LEN - 1:0] messages_remaining;
 	logic length_idx;
 	logic message_count_ready;
@@ -37,7 +37,7 @@ module itch_framer#(
 		DONE
 	}states_t;
 
-	states_t state, next_state;
+	states_t state /* verilator public */, next_state;
 
 	always_ff @(posedge clk or negedge rst_n) begin 
 		if(!rst_n || end_of_boundary) begin 
